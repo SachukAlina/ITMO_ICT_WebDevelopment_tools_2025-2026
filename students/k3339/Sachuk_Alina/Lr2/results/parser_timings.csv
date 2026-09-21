@@ -1,0 +1,4 @@
+approach,parsed_count,workers,elapsed_seconds
+threading,12,4,2.430716
+multiprocessing,12,4,2.571006
+asyncio,12,4,1.265441

@@ -1,0 +1,24 @@
+site_name: Лабораторные работы — Сачук Алина
+site_description: Средства Web-программирования, группа K3339
+site_author: Sachuk Alina
+
+theme:
+  name: material
+  language: ru
+  features:
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Главная: index.md
+  - Лабораторная работа №1: lr1.md
+  - Лабораторная работа №2: lr2.md
+  - Лабораторная работа №3: lr3.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences

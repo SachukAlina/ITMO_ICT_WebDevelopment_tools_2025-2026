@@ -1,0 +1,6 @@
+-r ../Lr1/requirements.txt
+-r ../Lr2/requirements.txt
+-r requirements-api.txt
+-r requirements-parser.txt
+pytest>=8.3,<10.0
+ruff>=0.9,<1.0

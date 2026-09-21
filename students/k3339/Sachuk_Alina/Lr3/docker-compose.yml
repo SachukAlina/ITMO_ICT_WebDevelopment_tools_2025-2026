@@ -1,0 +1,106 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: bookcrossing
+      POSTGRES_USER: bookcrossing
+      POSTGRES_PASSWORD: bookcrossing
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bookcrossing -d bookcrossing"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: Lr3/docker/api.Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://bookcrossing:bookcrossing@db:5432/bookcrossing
+      JWT_SECRET_KEY: local-docker-secret-change-before-production-0000000000
+      PARSER_SERVICE_URL: http://parser:8001
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      parser:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  parser:
+    build:
+      context: ..
+      dockerfile: Lr3/docker/parser.Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://bookcrossing:bookcrossing@db:5432/bookcrossing
+    ports:
+      - "8001:8001"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8001/health')",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    build:
+      context: ..
+      dockerfile: Lr3/docker/parser.Dockerfile
+    command:
+      [
+        "celery",
+        "-A",
+        "worker.celery_app:celery_app",
+        "worker",
+        "--loglevel=INFO",
+        "--concurrency=2",
+      ]
+    environment:
+      DATABASE_URL: postgresql+psycopg://bookcrossing:bookcrossing@db:5432/bookcrossing
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
